@@ -1,5 +1,4 @@
 import { jest } from "@jest/globals";
-import { rejects } from "assert";
 
 import { recommendationRepository } from "../../src/repositories/recommendationRepository.js";
 import { recommendationService } from "../../src/services/recommendationsService.js";
@@ -27,10 +26,8 @@ describe('testing the insert service', () => {
         });
 
         const promise = await recommendationService.insert({ name: 'aaaa', youtubeLink: 'link' });
-        console.log(promise);
         
-
-        expect(promise).rejects.toEqual("Recommendations names must be unique");
+        expect(promise).rejects.toEqual({type: "conflict", message: "Recommendations names must be unique"});
     });
 })
 
@@ -42,7 +39,7 @@ describe('testing the upvote service', () => {
         });
         jest.spyOn(recommendationRepository, 'updateScore').mockImplementationOnce((): any => {});
 
-        await recommendationService.upvote(1);
+        recommendationService.upvote(1);
 
         expect(recommendationRepository.find).toBeCalled();
         expect(recommendationRepository.updateScore).toBeCalled();
@@ -58,7 +55,7 @@ describe('testing the upvote service', () => {
         const promise = await recommendationService.upvote(1);
 
         expect(recommendationRepository.find).toBeCalled();
-        expect(promise).rejects.toEqual;
+        expect(promise).rejects.toEqual({type: "not_found", message: ""});
     });
 })
 
@@ -102,10 +99,10 @@ describe('testing the downvote service', () => {
             return false;
         });
 
-        const promise = await recommendationService.downvote(1);
+        const promise = recommendationService.downvote(1);
 
         expect(recommendationRepository.find).toBeCalled();
-        expect(promise).rejects.toEqual;
+        expect(promise).rejects.toEqual({type: "not_found", message: ""});
     });
 })
 
@@ -124,6 +121,12 @@ describe('testing getting the last 10 recommendations', () => {
 
 
 describe('testing getting a recommendation by id', () => {
+    beforeEach(() => {
+        jest.clearAllMocks(); 
+        jest.resetAllMocks();
+    });
+
+
     it('get recommendation by id', async () => {
         jest.spyOn(recommendationRepository, 'find').mockImplementationOnce((): any => {
             return { id: 1, name: 'aaaa', youtubeLink: 'link', score: 5 };
@@ -137,12 +140,14 @@ describe('testing getting a recommendation by id', () => {
 
     it('throw error when id does not exist', async () => {
         jest.spyOn(recommendationRepository, 'find').mockImplementationOnce((): any => {
-            return false;
+            return null;
         });
 
-        const primise = await recommendationService.getById(1);
+        const promise = await recommendationService.getById(200);
+        console.log(promise);
+        
 
-        expect(primise).rejects.toEqual
+        expect(promise).rejects.toContainEqual({type: "not_found", message: ""});
     });
 })
 
@@ -165,9 +170,9 @@ describe('testing getting a random recommendation', () => {
             return [];
         });
 
-        const primise = await recommendationService.getRandom();
+        const promise = recommendationService.getRandom();
 
-        expect(primise).rejects.toEqual
+        expect(promise).rejects.toEqual({type: "not_found", message: ""});
     });
 })
 
